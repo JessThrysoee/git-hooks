@@ -20,7 +20,6 @@ update_hook=$PWD/update.enforce-clean-merges
 create_tmp_dir
 trap delete_tmp_dir EXIT
 cd $TMP_DIR
-pwd
 
 delete_upstream() {
    cd $TMP_DIR
@@ -229,7 +228,22 @@ test_delete_branch() {
    teardown
 }
 
-test_tags() {
+test_create_tag() {
+   setup
+
+   cd $TMP_DIR/downstream
+   echo a >> a; git add a; git commit -am a
+   git push
+
+   log
+   git tag -a -m t t
+   git push --tags
+   log
+
+   teardown
+}
+
+test_delete_tag() {
    setup
 
    cd $TMP_DIR/downstream
@@ -238,6 +252,11 @@ test_tags() {
 
    git tag -a -m t t
    git push --tags
+
+   log
+   echo --------------
+   git tag -d t
+   git push --delete origin t
    log
 
    teardown
@@ -261,6 +280,8 @@ test_tags() {
 #test_whitelist2 'release/2.3'; #succeed
 
 #test_delete_branch
-test_tags
+
+#test_create_tag
+test_delete_tag
 
 echo done
