@@ -229,6 +229,20 @@ test_delete_branch() {
    teardown
 }
 
+test_tags() {
+   setup
+
+   cd $TMP_DIR/downstream
+   echo a >> a; git add a; git commit -am a
+   git push
+
+   git tag -a -m t t
+   git push --tags
+   log
+
+   teardown
+}
+
 #bad_merge_simple true ; #fail
 #bad_merge_simple true ; #fail
 #good_merge_simple true ; #succeed
@@ -246,6 +260,7 @@ test_delete_branch() {
 
 #test_whitelist2 'release/2.3'; #succeed
 
-test_delete_branch
+#test_delete_branch
+test_tags
 
 echo done
