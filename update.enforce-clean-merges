@@ -26,12 +26,15 @@ graphs='
 
 main() {
    local ref="$1"
-   local rev_old="$2"
-   local rev_new="$3"
+   local rev_old="$2"  ; #zeros on new branch
+   local rev_new="$3"  ; #zeros on delete
 
    #echo "ref=$ref"
    #echo "rev_old=$rev_old"
    #echo "rev_new=$rev_new"
+
+   ## delete
+   [[ -z ${rev_new//0} ]] && exit 0
 
    is_clean_merge_range "$rev_old" "$rev_new" || exit 1
 }
@@ -87,7 +90,7 @@ merges() {
    local rev_new="$2"
 
    # rev_old is 40 0's on new branches
-   if [[ -z ${rev_old//0/} ]]
+   if [[ -z ${rev_old//0} ]]
    then
       # commits not referenced from any branch yet
       git rev-list $rev_new --not --branches=*

@@ -212,6 +212,23 @@ test_whitelist2() {
    teardown
 }
 
+test_delete_branch() {
+   setup
+
+   cd $TMP_DIR/downstream
+   echo a >> a; git add a; git commit -am a
+
+   git checkout -b b master
+   echo b >> b; git add b; git commit -am b
+   git push origin b
+
+   log
+   git push --delete origin b
+   log
+
+   teardown
+}
+
 #bad_merge_simple true ; #fail
 #bad_merge_simple true ; #fail
 #good_merge_simple true ; #succeed
@@ -227,6 +244,8 @@ test_whitelist2() {
 #test_whitelist 'release/2.3'; #succeed
 #test_whitelist 'unknown/2.3'; #fail
 
-test_whitelist2 'release/2.3'; #succeed
+#test_whitelist2 'release/2.3'; #succeed
+
+test_delete_branch
 
 echo done
