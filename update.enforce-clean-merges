@@ -12,6 +12,7 @@ msg='Enforcing that merge commits does not include changes. Branches must be reb
 
 
 # Allow unclean merges from branches that match the <exclude_branches> whitespace separated list of patterns.
+# Note that a ref must exist in the remote repository prior to a push for <exclude_branches> to be able to match it.
 exclude_branches='release/.*'
 
 graphs='
@@ -98,13 +99,11 @@ merges() {
 is_on_excluded_branch() {
    [[ -z $exclude_branches ]] && return 1
 
-   local rev="$(git rev-parse $1)"
-
-   local entry ref
+   local rev="$1" entry ref
    while read entry
    do
       eval "$entry"
-      if [[ $(git merge-base $rev $ref) == $rev ]]
+      if git merge-base --is-ancestor $rev $ref || git merge-base --is-ancestor $ref $rev
       then
          for regexp in $exclude_branches
          do

@@ -176,8 +176,32 @@ test_whitelist() {
 
    git checkout -b $b master~
    echo b >> b; git add b; git commit -am b
-   echo b >> b; git add b; git commit -am b
    git push origin $b
+
+   echo b >> b; git add b; git commit -am b
+
+   git checkout master
+   git merge --no-ff $b -m merge
+
+   git push || true
+   log
+
+   teardown
+}
+
+test_whitelist2() {
+   setup
+   local b="$1"
+
+   cd $TMP_DIR/downstream
+   echo a >> a; git add a; git commit -am a
+   echo a >> a; git add a; git commit -am a
+   git push
+
+   git checkout -b $b master~
+   git push origin $b
+   echo b >> b; git add b; git commit -am b
+   echo b >> b; git add b; git commit -am b
 
    git checkout master
    git merge --no-ff $b -m merge
@@ -201,6 +225,8 @@ test_whitelist() {
 #merge_octopus true true; #succeed
 
 #test_whitelist 'release/2.3'; #succeed
-test_whitelist 'unknown/2.3'; #fail
+#test_whitelist 'unknown/2.3'; #fail
+
+test_whitelist2 'release/2.3'; #succeed
 
 echo done
