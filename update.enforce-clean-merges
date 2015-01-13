@@ -1,0 +1,120 @@
+#!/bin/bash -e
+
+#
+# 'update' githook, see also: https://www.kernel.org/pub/software/scm/git/docs/githooks.html#update
+#
+#
+# https://gist.github.com/jbenet/ee6c9ac48068889b0912
+# http://blogs.atlassian.com/2014/01/simple-git-workflow-simple/
+
+
+msg='Enforcing that merge commits does not include changes. Branches must be rebased before they can be merged.'
+
+
+# Allow unclean merges from branches that match the <exclude_branches> whitespace separated list of patterns.
+exclude_branches='release/.*'
+
+graphs='
+  clean merge       unclean merge
+  *                 *
+  |\                |\
+  | *               | *
+  | *               * |
+  |/                |/
+  *                 *'
+
+main() {
+   local ref="$1"
+   local rev_old="$2"
+   local rev_new="$3"
+
+   #echo "ref=$ref"
+   #echo "rev_old=$rev_old"
+   #echo "rev_new=$rev_new"
+
+   is_clean_merge_range "$rev_old" "$rev_new" || exit 1
+}
+
+is_clean_merge_range() {
+   local rev_old="$1"
+   local rev_new="$2"
+
+   for merge in $(merges $rev_old $rev_new)
+   do
+      if ! is_clean_merge_commit $merge
+      then
+         echo ""
+         echo "$msg"
+         [[ -n $exclude_branches ]] && echo "(except from branches that match: '$exclude_branches')"
+         echo ""
+         echo "Not a clean merge commit: $merge"
+         echo "$graphs"
+         echo ""
+         return 1
+      fi
+   done
+
+   return 0
+}
+
+is_clean_merge_commit() {
+   local rev="$1"
+
+   set -- $(git rev-list --parents -n 1 $rev)
+   shift
+
+   if [[ $# > 1 ]]
+   then
+      first_parent=$1
+      shift
+      for n_th_parent in "$@"
+      do
+         if ! is_on_excluded_branch $n_th_parent
+         then
+            # empty output -> clean merge
+            git rev-list $n_th_parent..$first_parent | grep -q .
+            [[ $? != 1 ]] && return 1
+         fi
+      done
+   fi
+
+   return 0
+}
+
+merges() {
+   local rev_old="$1"
+   local rev_new="$2"
+
+   # rev_old is 40 0's on new branches
+   if [[ -z ${rev_old//0/} ]]
+   then
+      # commits not referenced from any branch yet
+      git rev-list $rev_new --not --branches=*
+   else
+      git rev-list --merges $rev_old..$rev_new
+   fi
+}
+
+is_on_excluded_branch() {
+   [[ -z $exclude_branches ]] && return 1
+
+   local rev="$(git rev-parse $1)"
+
+   local entry ref
+   while read entry
+   do
+      eval "$entry"
+      if [[ $(git merge-base $rev $ref) == $rev ]]
+      then
+         for regexp in $exclude_branches
+         do
+            [[ $ref =~ $regexp ]] && return 0
+         done
+      fi
+   done < <(git for-each-ref --shell --format="ref=%(refname:short)" refs/heads)
+
+   return 1
+}
+
+main "$@"
+
